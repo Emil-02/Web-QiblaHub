@@ -185,6 +185,8 @@ const I18N = {
     noMosque: "Masjid tidak ditemukan",
     compassUnavailable:
       "Sensor kompas tidak tersedia di perangkat ini. Gunakan angka Arah Kiblat (derajat dari utara, searah jarum jam) sebagai acuan.",
+    compassCalibrate:
+      "Akurasi kompas rendah — gerakkan ponsel membentuk angka 8 beberapa kali untuk kalibrasi, dan jauhkan dari benda logam/magnet.",
     aboutBody:
       "<p><strong>QiblaHub</strong> adalah aplikasi pendamping ibadah digital yang membantu Anda menemukan arah kiblat, jadwal salat, kalender Hijriah, dan masjid terdekat berbasis lokasi.</p><p>Aplikasi ini dikembangkan sebagai proyek akhir akademik dengan fokus pada kemudahan penggunaan, aksesibilitas, dan desain modern yang elegan.</p>",
     privacyBody:
@@ -248,6 +250,8 @@ const I18N = {
     noMosque: "No mosques found",
     compassUnavailable:
       "Compass sensor is unavailable on this device. Use the Qibla bearing (degrees from north, clockwise) as your reference.",
+    compassCalibrate:
+      "Compass accuracy is low — move your phone in a figure-8 motion a few times to calibrate, and keep it away from metal/magnetic objects.",
     aboutBody:
       "<p><strong>QiblaHub</strong> is a digital worship companion that helps you find the qibla direction, prayer times, the Hijri calendar, and nearby mosques using location-based services.</p><p>This application was developed as an academic final project focusing on usability, accessibility, and elegant modern design.</p>",
     privacyBody:

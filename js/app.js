@@ -599,33 +599,116 @@ function renderQibla() {
   updateCompassView();
 }
 
+/* Smoothing melingkar: dial mengejar heading sensor lewat busur
+   terpendek — meredam getaran magnetometer tanpa melompat di 0°/360° */
+let displayHeading = 0; // sudut kontinu (tanpa wrap) yang dirender
+let compassRafId = null;
+
 function updateCompassView() {
-  const dial = $("#compass-dial");
-  const needle = $("#qibla-needle");
-  dial.style.transform = `rotate(${-state.heading}deg)`;
-  needle.style.transform = `rotate(${state.qiblaBearing}deg)`;
+  $("#compass-dial").style.transform = `rotate(${-displayHeading}deg)`;
+  $("#qibla-needle").style.transform = `rotate(${state.qiblaBearing}deg)`;
   /* jaga ikon Ka'bah tetap tegak */
   $(".qn-kaaba").style.transform =
-    `rotate(${-(state.qiblaBearing - state.heading)}deg)`;
-  $("#qibla-heading").textContent = `${Math.round(fixAngle(state.heading))}°`;
+    `rotate(${-(state.qiblaBearing - displayHeading)}deg)`;
+  $("#qibla-heading").textContent = `${Math.round(fixAngle(displayHeading))}°`;
 }
 
+function animateCompass() {
+  const delta = ((state.heading - fixAngle(displayHeading) + 540) % 360) - 180;
+  displayHeading += Math.abs(delta) < 0.05 ? delta : delta * 0.2;
+  updateCompassView();
+  if (state.compassActive) compassRafId = requestAnimationFrame(animateCompass);
+}
+
+/* Sudut rotasi layar (0/90/180/270) — tanpa ini pembacaan melenceng
+   90°/180° saat perangkat dalam mode landscape */
+function screenAngle() {
+  if (screen.orientation && typeof screen.orientation.angle === "number")
+    return screen.orientation.angle;
+  return typeof window.orientation === "number" ? window.orientation : 0;
+}
+
+/* Heading terkompensasi kemiringan dari sudut Euler perangkat (Z-X'-Y'').
+   Memproyeksikan sumbu perangkat ke bidang horizontal bumi sehingga
+   arah tetap akurat meski ponsel tidak rata sempurna — rumus
+   `360 - alpha` saja hanya benar saat perangkat benar-benar datar. */
+function headingFromEuler(alpha, beta, gamma) {
+  const a = rad(alpha),
+    b = rad(beta),
+    g = rad(gamma);
+  const cA = Math.cos(a),
+    sA = Math.sin(a);
+  const cB = Math.cos(b),
+    sB = Math.sin(b);
+  const cG = Math.cos(g),
+    sG = Math.sin(g);
+
+  /* Proyeksi horizontal sumbu atas layar (sumbu-y perangkat) */
+  let east = -sA * cB;
+  let north = cA * cB;
+
+  /* Ponsel hampir tegak → sumbu-y mendekati vertikal (tak stabil);
+     pakai arah punggung perangkat (rumus spesifikasi W3C) */
+  if (Math.abs(cB) < 0.35) {
+    east = -cA * sG - sA * sB * cG;
+    north = -sA * sG + cA * sB * cG;
+  }
+  return fixAngle(deg(Math.atan2(east, north)));
+}
+
+let absoluteSensor = false; // sumber bereferensi utara sudah aktif
+let calibrationHinted = false;
+
+function setHeading(h) {
+  if (!state.orientationFired) {
+    state.orientationFired = true;
+    if (state.compassFallback) {
+      state.compassFallback = false;
+      $("#qibla-instruction-text").textContent = t("qiblaInstruction");
+    }
+  }
+  state.heading = fixAngle(h);
+}
+
+/* Android/Chromium: `deviceorientationabsolute` selalu bereferensi
+   utara magnetik — sumber paling akurat, diprioritaskan */
+function onAbsOrientation(e) {
+  if (e.alpha == null) return;
+  absoluteSensor = true;
+  setHeading(
+    headingFromEuler(e.alpha, e.beta || 0, e.gamma || 0) + screenAngle(),
+  );
+}
+
+/* iOS Safari (webkitCompassHeading) & browser lain yang berspesifikasi
+   absolute. Event RELATIF (titik nol sembarang) sengaja DIABAIKAN —
+   memakainya membuat arah kiblat acak/menyesatkan. */
 function onOrientation(e) {
-  let heading = null;
-  if (typeof e.webkitCompassHeading === "number")
-    heading = e.webkitCompassHeading;
-  else if (e.absolute && typeof e.alpha === "number") heading = 360 - e.alpha;
-  else if (typeof e.alpha === "number") heading = 360 - e.alpha;
-  if (heading !== null) {
-    if (!state.orientationFired) {
-      state.orientationFired = true;
-      if (state.compassFallback) {
-        state.compassFallback = false;
+  if (
+    typeof e.webkitCompassHeading === "number" &&
+    e.webkitCompassHeading >= 0
+  ) {
+    absoluteSensor = true;
+    setHeading(e.webkitCompassHeading + screenAngle());
+
+    /* Akurasi kompas iOS rendah → sarankan kalibrasi angka-8 */
+    const acc = e.webkitCompassAccuracy;
+    if (typeof acc === "number") {
+      if (!calibrationHinted && (acc < 0 || acc > 25)) {
+        calibrationHinted = true;
+        $("#qibla-instruction-text").textContent = t("compassCalibrate");
+      } else if (calibrationHinted && acc >= 0 && acc <= 25) {
+        calibrationHinted = false;
         $("#qibla-instruction-text").textContent = t("qiblaInstruction");
       }
     }
-    state.heading = fixAngle(heading);
-    updateCompassView();
+    return;
+  }
+  if (absoluteSensor) return; // sudah ada sumber bereferensi utara
+  if (e.absolute === true && e.alpha != null) {
+    setHeading(
+      headingFromEuler(e.alpha, e.beta || 0, e.gamma || 0) + screenAngle(),
+    );
   }
 }
 
@@ -635,9 +718,15 @@ function startCompass() {
   if (state.compassActive) return;
   state.compassActive = true;
   state.orientationFired = false;
+  absoluteSensor = false;
+  calibrationHinted = false;
 
   const attach = () => {
-    window.addEventListener("deviceorientationabsolute", onOrientation, true);
+    window.addEventListener(
+      "deviceorientationabsolute",
+      onAbsOrientation,
+      true,
+    );
     window.addEventListener("deviceorientation", onOrientation, true);
   };
 
@@ -657,6 +746,7 @@ function startCompass() {
     DeviceOrientationEvent.requestPermission()
       .then((res) => {
         if (res === "granted") attach();
+        else $("#qibla-instruction-text").textContent = t("compassUnavailable");
       })
       .catch(() => {});
   } else if (typeof DeviceOrientationEvent !== "undefined") {
@@ -664,14 +754,23 @@ function startCompass() {
   } else {
     $("#qibla-instruction-text").textContent = t("compassUnavailable");
   }
+
+  displayHeading = state.heading;
   updateCompassView();
+  cancelAnimationFrame(compassRafId);
+  compassRafId = requestAnimationFrame(animateCompass);
 }
 
 function stopCompass() {
   if (!state.compassActive) return;
   state.compassActive = false;
   clearTimeout(compassFallbackTimer);
-  window.removeEventListener("deviceorientationabsolute", onOrientation, true);
+  cancelAnimationFrame(compassRafId);
+  window.removeEventListener(
+    "deviceorientationabsolute",
+    onAbsOrientation,
+    true,
+  );
   window.removeEventListener("deviceorientation", onOrientation, true);
 }
 

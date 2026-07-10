@@ -742,7 +742,9 @@ body:has([data-theme="dark"]) {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  transition: transform 0.25s var(--ease);
+  /* rotasi dianimasikan via JS (rAF + peredam) — transition CSS
+     justru menambah jeda dan membuat jarum terasa "mengambang" */
+  will-change: transform;
 }
 .compass-dial > span {
   position: absolute;
