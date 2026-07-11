@@ -13,6 +13,7 @@ const state = {
   locationName: DEFAULT_LOCATION.name,
   heading: 0,
   qiblaBearing: 0,
+  declination: 0, // deklinasi magnetik (°, positif = timur)
   prayerTimes: null,
   nearbyMosques: null, // hasil OpenStreetMap; null = pakai data statis
   roadKm: null, // jarak tempuh jalan per id masjid (OSRM)
@@ -53,6 +54,74 @@ function qiblaBearing(lat, lon) {
     Math.cos(rad(lat)) * Math.tan(rad(KAABA.lat)) -
     Math.sin(rad(lat)) * Math.cos(dLon);
   return fixAngle(deg(Math.atan2(y, x)));
+}
+
+/* ── Deklinasi magnetik (World Magnetic Model, harmonik bola ≤ 6) ──
+   Sensor kompas ponsel mengacu ke UTARA MAGNETIK, sedangkan bearing
+   kiblat dihitung dari UTARA SEBENARNYA. Selisihnya dihitung di sini
+   lalu ditambahkan ke heading agar keduanya konsisten — tanpa ini
+   arah bisa melenceng beberapa derajat (belasan derajat di luar
+   Indonesia). */
+function magneticDeclination(lat, lon, date = new Date()) {
+  const N = 6; // derajat maksimum model
+  const t = Math.min(
+    Math.max((date - Date.UTC(2020, 0, 1)) / 31557600000, 0),
+    10,
+  ); // tahun sejak epoch 2020.0 (ekstrapolasi dibatasi)
+
+  /* Geodetik (WGS84) → geosentrik */
+  const phi = rad(lat);
+  const e2 = 0.00669437999014;
+  const Rc = 6378.137 / Math.sqrt(1 - e2 * Math.sin(phi) ** 2);
+  const px = Rc * Math.cos(phi);
+  const pz = Rc * (1 - e2) * Math.sin(phi);
+  const r = Math.hypot(px, pz);
+  const latC = Math.atan2(pz, px); // latitude geosentrik
+  const mu = Math.sin(latC); // cos(kolatitude)
+  const s = Math.max(Math.cos(latC), 1e-8); // sin(kolatitude)
+
+  /* Fungsi Legendre semi-ternormalisasi Schmidt + turunan thd kolatitude */
+  const P = Array.from({ length: N + 1 }, () => new Array(N + 1).fill(0));
+  const dP = Array.from({ length: N + 1 }, () => new Array(N + 1).fill(0));
+  P[0][0] = 1;
+  for (let n = 1; n <= N; n++) {
+    for (let m = 0; m <= n; m++) {
+      if (n === m) {
+        if (n === 1) {
+          P[1][1] = s;
+          dP[1][1] = mu;
+        } else {
+          const f = Math.sqrt((2 * n - 1) / (2 * n));
+          P[n][n] = f * s * P[n - 1][n - 1];
+          dP[n][n] = f * (s * dP[n - 1][n - 1] + mu * P[n - 1][n - 1]);
+        }
+      } else {
+        const norm = Math.sqrt(n * n - m * m);
+        const k = Math.sqrt((n - 1) * (n - 1) - m * m);
+        const P2 = n - 2 >= m ? P[n - 2][m] : 0;
+        const dP2 = n - 2 >= m ? dP[n - 2][m] : 0;
+        P[n][m] = ((2 * n - 1) * mu * P[n - 1][m] - k * P2) / norm;
+        dP[n][m] =
+          ((2 * n - 1) * (mu * dP[n - 1][m] - s * P[n - 1][m]) - k * dP2) /
+          norm;
+      }
+    }
+  }
+
+  /* Sintesis komponen utara (X) dan timur (Y) medan magnet */
+  const lam = rad(lon);
+  let X = 0,
+    Y = 0;
+  for (const [n, m, g0, h0, gd, hd] of WMM_COEFFS) {
+    const g = g0 + gd * t;
+    const h = h0 + hd * t;
+    const f = (6371.2 / r) ** (n + 2);
+    const cm = Math.cos(m * lam);
+    const sm = Math.sin(m * lam);
+    X += f * (g * cm + h * sm) * dP[n][m];
+    Y += (f * m * (g * sm - h * cm) * P[n][m]) / s;
+  }
+  return deg(Math.atan2(Y, X)); // positif = deklinasi timur
 }
 
 /* ═══════════ PERHITUNGAN WAKTU SALAT (MWL) ═══════════ */
@@ -287,6 +356,7 @@ function applyLocation(lat, lon, name) {
   state.lon = lon;
   state.locationName = name || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
   state.qiblaBearing = qiblaBearing(lat, lon);
+  state.declination = magneticDeclination(lat, lon);
   state.prayerTimes = computePrayerTimes(new Date(), lat, lon);
   state.roadKm = null; // jarak jalan lama tidak berlaku di lokasi baru
   renderLocation();
@@ -596,6 +666,9 @@ function renderQibla() {
   $("#qibla-distance").textContent = `${Math.round(
     haversine(state.lat, state.lon, KAABA.lat, KAABA.lon),
   ).toLocaleString(state.lang === "id" ? "id-ID" : "en-US")} km`;
+  const d = state.declination;
+  $("#qibla-declination").textContent =
+    `${t("declinationLabel")} ${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(1)}° — ${t("trueNorthNote")}`;
   updateCompassView();
 }
 
@@ -667,13 +740,72 @@ function setHeading(h) {
       $("#qibla-instruction-text").textContent = t("qiblaInstruction");
     }
   }
-  state.heading = fixAngle(h);
+  /* + deklinasi → heading utara-sebenarnya, konsisten dengan bearing */
+  state.heading = fixAngle(h + state.declination);
+}
+
+/* ── AbsoluteOrientationSensor (Generic Sensor API) ──
+   Fusi giroskop + akselerometer + magnetometer pada 60 Hz: pembacaan
+   jauh lebih stabil dan minim getaran dibanding event mentah
+   deviceorientation. Dipakai sebagai sumber UTAMA bila tersedia. */
+let orientationSensor = null;
+let sensorActive = false;
+
+function headingFromQuaternion(x, y, z, w) {
+  /* Sumbu-y perangkat (atas layar) diproyeksikan ke kerangka bumi */
+  let east = 2 * (x * y - w * z);
+  let north = 1 - 2 * (x * x + z * z);
+  const up = 2 * (y * z + w * x);
+  /* Ponsel hampir tegak → pakai arah punggung perangkat (-z) */
+  if (Math.abs(up) > 0.94) {
+    east = -2 * (x * z + w * y);
+    north = -2 * (y * z - w * x);
+  }
+  return fixAngle(deg(Math.atan2(east, north)));
+}
+
+function startGenericSensor() {
+  if (typeof AbsoluteOrientationSensor === "undefined") return;
+  try {
+    const sensor = new AbsoluteOrientationSensor({ frequency: 60 });
+    sensor.addEventListener("reading", () => {
+      const [x, y, z, w] = sensor.quaternion;
+      sensorActive = true;
+      setHeading(headingFromQuaternion(x, y, z, w) + screenAngle());
+    });
+    sensor.addEventListener("error", () => {
+      /* sensor ditolak/tidak ada — event deviceorientation jadi cadangan */
+      sensorActive = false;
+      try {
+        sensor.stop();
+      } catch {
+        /* noop */
+      }
+      if (orientationSensor === sensor) orientationSensor = null;
+    });
+    sensor.start();
+    orientationSensor = sensor;
+  } catch {
+    orientationSensor = null; // diblokir permissions-policy / tak didukung
+  }
+}
+
+function stopGenericSensor() {
+  if (orientationSensor) {
+    try {
+      orientationSensor.stop();
+    } catch {
+      /* noop */
+    }
+    orientationSensor = null;
+  }
+  sensorActive = false;
 }
 
 /* Android/Chromium: `deviceorientationabsolute` selalu bereferensi
-   utara magnetik — sumber paling akurat, diprioritaskan */
+   utara magnetik — cadangan akurat bila Generic Sensor tak tersedia */
 function onAbsOrientation(e) {
-  if (e.alpha == null) return;
+  if (sensorActive || e.alpha == null) return;
   absoluteSensor = true;
   setHeading(
     headingFromEuler(e.alpha, e.beta || 0, e.gamma || 0) + screenAngle(),
@@ -684,6 +816,7 @@ function onAbsOrientation(e) {
    absolute. Event RELATIF (titik nol sembarang) sengaja DIABAIKAN —
    memakainya membuat arah kiblat acak/menyesatkan. */
 function onOrientation(e) {
+  if (sensorActive) return; // Generic Sensor sudah memasok heading
   if (
     typeof e.webkitCompassHeading === "number" &&
     e.webkitCompassHeading >= 0
@@ -739,6 +872,8 @@ function startCompass() {
     }
   }, 3000);
 
+  startGenericSensor(); // sumber utama (Android/Chromium)
+
   if (
     typeof DeviceOrientationEvent !== "undefined" &&
     typeof DeviceOrientationEvent.requestPermission === "function"
@@ -766,6 +901,7 @@ function stopCompass() {
   state.compassActive = false;
   clearTimeout(compassFallbackTimer);
   cancelAnimationFrame(compassRafId);
+  stopGenericSensor();
   window.removeEventListener(
     "deviceorientationabsolute",
     onAbsOrientation,

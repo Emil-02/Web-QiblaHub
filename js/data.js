@@ -6,6 +6,41 @@
 /* ---------- Konstanta lokasi ---------- */
 const KAABA = { lat: 21.422487, lon: 39.826206 };
 
+/* ---------- Model magnet bumi (WMM2020, derajat ≤ 6) ----------
+   Koefisien Gauss g/h (nT) + variasi sekuler per tahun. Dipakai untuk
+   menghitung DEKLINASI MAGNETIK — selisih utara magnetik (acuan sensor
+   kompas ponsel) dengan utara sebenarnya (acuan bearing kiblat). */
+const WMM_COEFFS = [
+  // [n, m, g, h, dg/dt, dh/dt]
+  [1, 0, -29404.5, 0, 6.7, 0],
+  [1, 1, -1450.7, 4652.9, 7.7, -25.1],
+  [2, 0, -2500.0, 0, -11.5, 0],
+  [2, 1, 2982.0, -2991.6, -7.1, -30.2],
+  [2, 2, 1676.8, -734.8, -2.2, -23.9],
+  [3, 0, 1363.9, 0, 2.8, 0],
+  [3, 1, -2381.0, -82.2, -6.2, 5.7],
+  [3, 2, 1236.2, 241.8, 3.4, -1.0],
+  [3, 3, 525.7, -542.9, -12.2, 1.1],
+  [4, 0, 903.1, 0, -1.1, 0],
+  [4, 1, 809.4, 282.0, -1.6, 0.2],
+  [4, 2, 86.2, -158.4, -6.0, 6.9],
+  [4, 3, -309.4, 199.8, 5.4, 3.7],
+  [4, 4, 47.9, -350.1, -5.5, -5.6],
+  [5, 0, -234.4, 0, -0.3, 0],
+  [5, 1, 363.1, 47.7, 0.6, 0.1],
+  [5, 2, 187.8, 208.4, -0.7, 2.5],
+  [5, 3, -140.7, -121.3, 0.1, -0.9],
+  [5, 4, -151.2, 32.2, 1.2, 3.0],
+  [5, 5, 13.7, 99.1, 1.0, 0.5],
+  [6, 0, 65.9, 0, -0.6, 0],
+  [6, 1, 65.6, -19.1, -0.4, 0.1],
+  [6, 2, 73.0, 25.0, 0.5, -1.8],
+  [6, 3, -121.5, 52.7, 1.4, -1.4],
+  [6, 4, -36.2, -64.4, -1.4, 0.9],
+  [6, 5, 13.5, 9.0, 0.0, 0.1],
+  [6, 6, -64.7, 68.1, 0.8, 1.0],
+];
+
 const DEFAULT_LOCATION = {
   lat: -6.1751,
   lon: 106.865,
@@ -146,7 +181,7 @@ const I18N = {
     heading: "Arah Anda",
     distanceKaaba: "Jarak ke Ka'bah",
     qiblaInstruction:
-      "Letakkan ponsel pada permukaan datar, lalu putar perlahan hingga ikon Ka'bah sejajar dengan penunjuk atas.",
+      "Letakkan ponsel pada permukaan datar, lalu putar perlahan hingga ikon Ka'bah sejajar dengan penunjuk atas. Jika arah terasa meleset, gerakkan ponsel membentuk angka 8 untuk kalibrasi dan jauhkan dari benda logam/magnet.",
     refreshLocation: "Perbarui Lokasi",
     prayerMethodNote: "Perhitungan: Muslim World League (Fajr 18°, Isha 17°)",
     todayHijri: "Hari ini (Hijriah)",
@@ -187,6 +222,8 @@ const I18N = {
       "Sensor kompas tidak tersedia di perangkat ini. Gunakan angka Arah Kiblat (derajat dari utara, searah jarum jam) sebagai acuan.",
     compassCalibrate:
       "Akurasi kompas rendah — gerakkan ponsel membentuk angka 8 beberapa kali untuk kalibrasi, dan jauhkan dari benda logam/magnet.",
+    declinationLabel: "Deklinasi magnetik",
+    trueNorthNote: "arah otomatis dikoreksi ke utara sebenarnya",
     aboutBody:
       "<p><strong>QiblaHub</strong> adalah aplikasi pendamping ibadah digital yang membantu Anda menemukan arah kiblat, jadwal salat, kalender Hijriah, dan masjid terdekat berbasis lokasi.</p><p>Aplikasi ini dikembangkan sebagai proyek akhir akademik dengan fokus pada kemudahan penggunaan, aksesibilitas, dan desain modern yang elegan.</p>",
     privacyBody:
@@ -211,7 +248,7 @@ const I18N = {
     heading: "Your Heading",
     distanceKaaba: "Distance to Kaaba",
     qiblaInstruction:
-      "Place your phone on a flat surface, then rotate slowly until the Kaaba icon aligns with the top marker.",
+      "Place your phone on a flat surface, then rotate slowly until the Kaaba icon aligns with the top marker. If the direction seems off, wave your phone in a figure-8 motion to calibrate and keep it away from metal/magnetic objects.",
     refreshLocation: "Refresh Location",
     prayerMethodNote: "Calculation: Muslim World League (Fajr 18°, Isha 17°)",
     todayHijri: "Today (Hijri)",
@@ -252,6 +289,8 @@ const I18N = {
       "Compass sensor is unavailable on this device. Use the Qibla bearing (degrees from north, clockwise) as your reference.",
     compassCalibrate:
       "Compass accuracy is low — move your phone in a figure-8 motion a few times to calibrate, and keep it away from metal/magnetic objects.",
+    declinationLabel: "Magnetic declination",
+    trueNorthNote: "heading auto-corrected to true north",
     aboutBody:
       "<p><strong>QiblaHub</strong> is a digital worship companion that helps you find the qibla direction, prayer times, the Hijri calendar, and nearby mosques using location-based services.</p><p>This application was developed as an academic final project focusing on usability, accessibility, and elegant modern design.</p>",
     privacyBody:
