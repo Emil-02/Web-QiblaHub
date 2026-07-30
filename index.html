@@ -15,6 +15,10 @@
       rel="stylesheet"
     />
     <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&family=Amiri:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
     />
@@ -197,6 +201,34 @@
           <div class="card mini-prayer-list" id="mini-prayer-list">
             <!-- filled by JS -->
           </div>
+
+          <!-- Development team card (same hierarchy as the Android app) -->
+          <button class="team-card card" id="team-card" type="button">
+            <span class="team-card-icon feature-icon fi-green">
+              <span class="material-symbols-rounded">groups</span>
+            </span>
+            <span class="team-card-copy">
+              <strong data-i18n="developmentTeamTitle">Tim Pengembang QiblaHub</strong>
+              <small>
+                <span data-i18n="teamProject">Proyek PKM AIK</span>
+                <span aria-hidden="true"> — </span>
+                <span data-i18n="teamGroup">Kelompok 2</span>
+              </small>
+            </span>
+            <span class="team-card-divider" aria-hidden="true"></span>
+            <span class="team-card-supervised" data-i18n="teamSupervisedBy">Dibimbing oleh</span>
+            <span class="team-card-lecturer">
+              <span class="material-symbols-rounded">school</span>
+              <span>Dr. ALAMSYAH, S.Pd. I., M.H</span>
+            </span>
+            <span class="team-card-footer">
+              <span data-i18n="teamStudentCount" data-team-count="true">6 Anggota Mahasiswa</span>
+              <span class="team-card-action">
+                <span data-i18n="viewTeam">Lihat Tim</span>
+                <span class="material-symbols-rounded">chevron_right</span>
+              </span>
+            </span>
+          </button>
         </div>
       </section>
 
@@ -608,6 +640,32 @@
         <button class="btn-primary" id="modal-close" data-i18n="close">
           Tutup
         </button>
+      </div>
+    </div>
+
+    <!-- Development team sheet -->
+    <div class="team-overlay hidden" id="team-modal">
+      <div class="team-sheet" role="dialog" aria-modal="true" aria-labelledby="team-modal-title">
+        <span class="team-handle" aria-hidden="true"></span>
+        <button class="team-close icon-btn" id="team-modal-close" aria-label="Tutup">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+        <div class="team-sheet-header">
+          <span class="team-sheet-icon feature-icon fi-green">
+            <span class="material-symbols-rounded">groups</span>
+          </span>
+          <div>
+            <h2 id="team-modal-title" data-i18n="developmentTeamTitle">Tim Pengembang QiblaHub</h2>
+            <p><span data-i18n="teamProject">Proyek PKM AIK</span> — <span data-i18n="teamGroup">Kelompok 2</span></p>
+          </div>
+        </div>
+        <h3 class="team-section-label" data-i18n="teamLecturer">Dosen Pendamping</h3>
+        <div class="team-lecturer-card card">
+          <span class="team-lecturer-icon"><span class="material-symbols-rounded">school</span></span>
+          <strong>Dr. ALAMSYAH, S.Pd. I., M.H</strong>
+        </div>
+        <h3 class="team-section-label" data-i18n="teamStudents">Mahasiswa</h3>
+        <div class="team-student-list card" id="team-student-list"></div>
       </div>
     </div>
 

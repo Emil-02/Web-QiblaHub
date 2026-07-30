@@ -2142,3 +2142,306 @@ body:has([data-theme="dark"]) {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ═══════════ Android parity: development team card and sheet ═══════════ */
+body {
+  font-family: "Roboto", system-ui, sans-serif;
+}
+
+.team-card {
+  width: 100%;
+  margin: 20px 0 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  column-gap: 14px;
+  row-gap: 0;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  appearance: none;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.team-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.team-card:active {
+  transform: scale(0.99);
+}
+
+.team-card-icon {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+}
+
+.team-card-copy {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.team-card-copy strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.team-card-copy small {
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.team-card-divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0 12px;
+}
+
+.team-card-supervised {
+  grid-column: 1 / -1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+
+.team-card-lecturer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 7px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.team-card-lecturer .material-symbols-rounded {
+  color: var(--gold);
+  font-size: 20px;
+  flex: none;
+}
+
+.team-card-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.team-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--primary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.team-card-action .material-symbols-rounded {
+  font-size: 18px;
+}
+
+.team-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(8, 20, 14, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.team-sheet {
+  position: relative;
+  width: 100%;
+  max-height: calc(100dvh - 52px);
+  overflow: auto;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 28px 28px 0 0;
+  padding: 18px 20px calc(28px + env(safe-area-inset-bottom));
+  animation: teamSheetIn 0.3s var(--ease) both;
+}
+
+@keyframes teamSheetIn {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.team-handle {
+  display: block;
+  width: 72px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--text-3);
+  opacity: 0.65;
+  margin: 0 auto 22px;
+}
+
+.team-close {
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  background: transparent;
+  color: var(--text);
+}
+
+.team-sheet-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 0 42px 0 0;
+}
+
+.team-sheet-icon {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+}
+
+.team-sheet-header h2 {
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 800;
+  margin: 4px 0 8px;
+}
+
+.team-sheet-header p {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.team-section-label {
+  margin: 26px 0 12px;
+  color: var(--primary);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.team-lecturer-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+}
+
+.team-lecturer-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--gold-light);
+  color: #4a3a08;
+  flex: none;
+}
+
+.team-lecturer-icon .material-symbols-rounded {
+  font-size: 26px;
+}
+
+.team-lecturer-card strong {
+  font-size: 15px;
+}
+
+.team-student-list {
+  padding: 6px 18px;
+}
+
+.team-student-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.team-student-row:last-child {
+  border-bottom: none;
+}
+
+.team-student-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 800;
+  flex: none;
+}
+
+.team-student-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.team-student-copy strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.team-student-copy small {
+  font-size: 14px;
+  color: var(--text-2);
+  letter-spacing: 0.02em;
+}
+
+body.team-sheet-open {
+  overflow: hidden;
+}
+
+@media (max-width: 599px) {
+  .home-body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .team-sheet-header h2 {
+    font-size: 21px;
+  }
+}
+
+@media (min-width: 900px) {
+  .team-card {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .team-sheet {
+    max-width: 620px;
+    max-height: calc(100dvh - 56px);
+  }
+}

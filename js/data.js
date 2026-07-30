@@ -47,6 +47,19 @@ const DEFAULT_LOCATION = {
   name: "Jakarta, Indonesia",
 };
 
+/* ---------- Tim pengembang (disamakan dengan aplikasi Android) ---------- */
+const TEAM_DATA = {
+  lecturer: "Dr. ALAMSYAH, S.Pd. I., M.H",
+  students: [
+    { name: "Dwi Azzahra Sasqila Fitri", studentId: "105841118724" },
+    { name: "Wuri Satya Natama", studentId: "105841118824" },
+    { name: "Emil Rahmat", studentId: "105841119124" },
+    { name: "Tyara Ayuliansyah", studentId: "105841119524" },
+    { name: "Gefira Nur Fatima", studentId: "105841120124" },
+    { name: "Muh Rafly Aprial Ridho", studentId: "105841120324" },
+  ],
+};
+
 /* ---------- Data masjid (mock) ---------- */
 const MOSQUES = [
   {
@@ -204,6 +217,14 @@ const I18N = {
     version: "Versi",
     madeWith: "Dibuat dengan",
     close: "Tutup",
+    developmentTeamTitle: "Tim Pengembang QiblaHub",
+    teamProject: "Proyek PKM AIK",
+    teamGroup: "Kelompok 2",
+    teamLecturer: "Dosen Pendamping",
+    teamSupervisedBy: "Dibimbing oleh",
+    teamStudents: "Mahasiswa",
+    teamStudentCount: "{count} Anggota Mahasiswa",
+    viewTeam: "Lihat Tim",
     navHome: "Beranda",
     navMosque: "Masjid",
     navCalendar: "Kalender",
@@ -271,6 +292,14 @@ const I18N = {
     version: "Version",
     madeWith: "Made with",
     close: "Close",
+    developmentTeamTitle: "QiblaHub Development Team",
+    teamProject: "PKM AIK Project",
+    teamGroup: "Group 2",
+    teamLecturer: "Academic Supervisor",
+    teamSupervisedBy: "Supervised by",
+    teamStudents: "Students",
+    teamStudentCount: "{count} Student Members",
+    viewTeam: "View Team",
     navHome: "Home",
     navMosque: "Mosque",
     navCalendar: "Calendar",

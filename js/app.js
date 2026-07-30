@@ -546,6 +546,54 @@ function renderHome() {
   $("#home-date-hijri").textContent = hijriString(now);
 }
 
+/* ═══════════ TIM PENGEMBANG ═══════════ */
+function renderTeam() {
+  const countLabel = t("teamStudentCount").replace(
+    "{count}",
+    String(TEAM_DATA.students.length),
+  );
+  document.querySelectorAll("[data-team-count]").forEach((el) => {
+    el.textContent = countLabel;
+  });
+
+  const list = $("#team-student-list");
+  if (!list) return;
+  list.innerHTML = TEAM_DATA.students
+    .map(
+      (student, index) => `
+        <div class="team-student-row">
+          <span class="team-student-number">${index + 1}</span>
+          <span class="team-student-copy">
+            <strong>${student.name}</strong>
+            <small>${student.studentId}</small>
+          </span>
+        </div>`,
+    )
+    .join("");
+}
+
+function openTeamSheet() {
+  renderTeam();
+  $("#team-modal").classList.remove("hidden");
+  document.body.classList.add("team-sheet-open");
+}
+
+function closeTeamSheet() {
+  $("#team-modal").classList.add("hidden");
+  document.body.classList.remove("team-sheet-open");
+}
+
+$("#team-card").addEventListener("click", openTeamSheet);
+$("#team-modal-close").addEventListener("click", closeTeamSheet);
+$("#team-modal").addEventListener("click", (e) => {
+  if (e.target.id === "team-modal") closeTeamSheet();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("#team-modal").classList.contains("hidden")) {
+    closeTeamSheet();
+  }
+});
+
 /* ═══════════ JADWAL SALAT ═══════════ */
 function prayerStatus() {
   const pt = state.prayerTimes;
@@ -1216,6 +1264,7 @@ function applyLang(lang) {
     $("#qibla-instruction-text").textContent = t("compassUnavailable");
 
   renderHome();
+  renderTeam();
   renderPrayer();
   renderCalendar();
   renderMosques($("#mosque-search").value);
